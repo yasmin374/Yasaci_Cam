@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>YASACICAM Oldroll Digicam Photobooth</title>
+  <meta name="viewport" content="width=320, user-scalable=no">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(130deg, #47b0e9 0%, #2b5ca1 100%);
+    }
+    .centered {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+      background: linear-gradient(130deg, #47b0e9 0%, #2b5ca1 100%);
+    }
+    .yasacicam-title {
+      font-size: 3.2rem;
+      color: #fff;
+      background: #2574c6;
+      padding: 38px 64px;
+      border-radius: 34px;
+      box-shadow: 0 8px 36px #0e1a3640;
+      letter-spacing: 6px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .camera-section {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding-top: 36px;
+      background: linear-gradient(130deg, #47b0e9 0%, #2b5ca1 100%);
+      transition: background 0.5s;
+    }
+    .digicam-panel {
+      background: rgba(255,255,255,0.11);
+      border-radius: 36px;
+      padding: 32px 18px 30px 18px;
+      box-shadow: 0 8px 32px #21366d44;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 38px;
+    }
+    .camera-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+    }
+    .camera-frame {
+      width: 260px;
+      height: 260px;
+      position: relative;
+      background: #0e1a36;
+      box-shadow: 0 4px 18px #0002;
+      overflow: hidden;
+      border: 4px solid #6cb1f7;
+      border-radius: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    video, canvas, img.captured-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      left: 0; top: 0;
+      border-radius: 32px;
+    }
+    .overlay {
+      pointer-events: none;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0; left: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 32px;
+    }
+    /* Flash overlay (screen flash) */
+    .flash-overlay {
+      position: absolute;
+      left: 0; top: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      z-index: 99;
+      opacity: 0;
+      pointer-events: none;
+      border-radius: 32px;
+      transition: opacity 0.12s;
+    }
+    .controls-row {
+      display: flex;
+      justify-content: center;
+      width: 340px;
+      margin: 0 auto;
+      gap: 14px;
+      margin-bottom: 18px;
+      margin-top: 18px;
+    }
+    .control-btn {
+      flex: 1;
+      font-size: 1.08rem;
+      padding: 11px 0;
+      border: none;
+      border-radius: 10px;
+      background: #2574c6;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s, box-shadow 0.2s;
+      margin: 0 4px;
+      box-shadow: 0 2px 12px #193b6040;
+      letter-spacing: 1px;
+      outline: none;
+    }
+    .control-btn.selected, .effect-btn.selected, .preset-btn.selected, .frame-btn.selected {
+      background: #1d5fa4;
+      box-shadow: 0 4px 16px #2574c655;
+      color: #fff;
+    }
+    .switch-btn {
+      background: #fff;
+      color: #2574c6;
+      font-weight: bold;
+      border: 2px solid #2574c6;
+      width: 44px; height: 44px;
+      border-radius: 100px;
+      margin-left: 8px;
+      margin-right: 8px;
+      font-size: 1.4rem;
+      cursor: pointer;
+      box-shadow: 0 2px 12px #193b6040;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .switch-btn:hover {
+      background: #2574c6;
+      color: #fff;
+    }
+    .effect-row, .preset-row, .frame-row {
+      margin: 0 auto;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      width: 340px;
+    }
+    .effect-btn, .preset-btn, .frame-btn {
+      flex: 1;
+      font-size: 1.02rem;
+      padding: 9px 0;
+      border: none;
+      border-radius: 8px;
+      background: #fff;
+      color: #2574c6;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 12px #193b6040;
+      letter-spacing: 1px;
+      outline: none;
+    }
+    .frame-btn[disabled] { opacity: 0.5; pointer-events: none; }
+    .download-row {
+      width: 340px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 28px;
+      align-items: center;
+    }
+    .download-btn {
+      font-size: 1.02rem;
+      padding: 13px 0;
+      border: none;
+      border-radius: 12px;
+      background: #2ecc71;
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      width: 56%;
+      box-shadow: 0 2px 12px #193b6040;
+      transition: background 0.2s;
+      margin: 0;
+    }
+    .download-btn:hover {
+      background: #219150;
+    }
+    .retake-btn {
+      font-size: 1rem;
+      padding: 10px 8px;
+      border: none;
+      border-radius: 10px;
+      background: #ff6b6b;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      width: 36%;
+      box-shadow: 0 2px 12px #193b6040;
+    }
+    .retake-btn:hover { background: #e04f4f; }
+    .take-photo-btn {
+      margin: 0 auto;
+      display: block;
+      font-size: 1.1rem;
+      padding: 14px 0;
+      width: 220px;
+      border: none;
+      border-radius: 16px;
+      background: #e2edfa;
+      color: #2574c6;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 2px 12px #193b6040;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+      margin-top: 2px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .take-photo-btn:hover {
+      background: #2574c6;
+      color: #fff;
+    }
+    @media (max-width: 650px) {
+      .controls-row, .effect-row, .download-row, .preset-row, .frame-row {
+        width: 97vw;
+        max-width: 98vw;
+        gap: 10px;
+      }
+      .camera-frame {
+        width: 85vw;
+        max-width: 260px;
+        height: 85vw;
+        max-height: 260px;
+      }
+      .take-photo-btn, .download-btn {
+        width: 90vw;
+        max-width: 220px;
+      }
+      .download-btn { width: 58%; }
+      .retake-btn { width: 35%; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Welcome Section -->
+  <div class="centered" id="welcomePage">
+    <div class="yasacicam-title">YASACICAM</div>
+  </div>
+
+  <!-- Camera Section -->
+  <div class="camera-section" id="cameraPage">
+    <div class="digicam-panel">
+      <div class="camera-stack">
+        <div class="camera-frame" style="position:relative;">
+          <video id="video1" autoplay playsinline></video>
+          <canvas id="canvas1" style="display:none"></canvas>
+          <img id="photo1" class="captured-photo" style="display:none;" alt="Hasil Foto 1">
+          <div class="overlay" id="overlay1"></div>
+          <div class="flash-overlay" id="flash1"></div>
+        </div>
+        <div class="camera-frame" style="position:relative;">
+          <video id="video2" autoplay playsinline></video>
+          <canvas id="canvas2" style="display:none"></canvas>
+          <img id="photo2" class="captured-photo" style="display:none;" alt="Hasil Foto 2">
+          <div class="overlay" id="overlay2"></div>
+          <div class="flash-overlay" id="flash2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame-row">
+      <button class="frame-btn selected" data-frame="none">Tanpa Frame</button>
+      <!-- disabled until preload berhasil -->
+      <button class="frame-btn" data-frame="sinchan" disabled>Sinchan</button>
+    </div>
+
+    <div class="controls-row">
+      <button class="control-btn switch-btn" id="switchCamBtn" title="Ganti Kamera">&#8645;</button>
+      <button class="control-btn" id="flashBtn" title="Flash"><span id="flashIcon">⚡</span> <span id="flashText">Off</span></button>
+      <div style="flex:2"></div>
+    </div>
+
+    <div class="effect-row">
+      <button class="effect-btn selected" data-effect="none">Tanpa Efek</button>
+      <button class="effect-btn" data-effect="digicam">Oldroll Digicam</button>
+      <button class="effect-btn" data-effect="analog">Kamera Analog</button>
+    </div>
+    <div class="preset-row" id="presetRow" style="display:none"></div>
+    <button class="take-photo-btn" id="takePhotoBtn">Ambil Foto</button>
+    <div class="download-row" id="downloadRow" style="display: none;">
+      <button class="download-btn" id="downloadBtn">Download Hasil Gabungan</button>
+      <button class="retake-btn" id="retakeBtn">Ulangi</button>
+    </div>
+  </div>
+
+  <script>
+    // Sinchan frame URL (ganti kalau perlu)
+    const sinchanFrameUrl = "https://i.imgur.com/2wA2Tt3.png";
+
+    // ----- preload & deteksi ketersediaan frame Sinchan -----
+    let sinchanAvailable = false;
+    (function preloadSinchan(){
+      const sinchanImgProbe = new Image();
+      sinchanImgProbe.crossOrigin = "anonymous";
+      sinchanImgProbe.onload = () => {
+        sinchanAvailable = true;
+        const btn = document.querySelector('.frame-btn[data-frame="sinchan"]');
+        if (btn) {
+          btn.disabled = false;
+          btn.title = "Sinchan (tersedia)";
+        }
+        console.log('Sinchan frame tersedia (preloaded).');
+      };
+      sinchanImgProbe.onerror = (e) => {
+        sinchanAvailable = false;
+        const btn = document.querySelector('.frame-btn[data-frame="sinchan"]');
+        if (btn) {
+          btn.disabled = true;
+          btn.title = "Sinchan tidak tersedia (gagal memuat)";
+        }
+        console.warn('Gagal memuat Sinchan frame:', e);
+      };
+      // mulai preload
+      sinchanImgProbe.src = sinchanFrameUrl;
+    })();
+    // ------------------------------------------------------
+
+    // Efek Preset Digicam dan Analog
+    const effectPresets = {
+      digicam: [
+        { name: "Classic Blue", id: "digiblue", filter: "contrast(1.32) brightness(1.09) saturate(1.20) hue-rotate(-8deg)", vignette: "rgba(30,60,90,0.32)", blue: 18, grain: 22 },
+        { name: "Warm Gold", id: "digiwarm", filter: "contrast(1.16) brightness(1.10) saturate(1.16) hue-rotate(10deg)", vignette: "rgba(81,56,30,0.22)", blue: -4, grain: 18 },
+        { name: "Cyber Pink", id: "digipink", filter: "contrast(1.11) brightness(1.05) saturate(1.2) hue-rotate(37deg)", vignette: "rgba(90,30,80,0.28)", blue: 32, grain: 25 }
+      ],
+      analog: [
+        { name: "Vintage", id: "vintage", filter: "contrast(1.08) brightness(1.08) sepia(0.37)", tone: [22,18,10], grain: 18 },
+        { name: "70s Green", id: "green", filter: "contrast(1.11) brightness(1.07) sepia(0.56) hue-rotate(-47deg)", tone: [10,24,20], grain: 22 },
+        { name: "Retro Red", id: "red", filter: "contrast(1.13) brightness(1.07) sepia(0.4) hue-rotate(-18deg)", tone: [30,12,6], grain: 20 }
+      ]
+    };
+
+    let digicamPreset = effectPresets.digicam[0];
+    let analogPreset = effectPresets.analog[0];
+
+    window.onload = function() {
+      setTimeout(() => {
+        document.getElementById('welcomePage').style.display = 'none';
+        document.getElementById('cameraPage').style.display = 'flex';
+        startCamera();
+      }, 1400);
+    };
+
+    let currentStream = null;
+    let usingFrontCamera = true;
+    let currentEffect = 'none';
+    let currentFrame = 'none';
+
+    const video1 = document.getElementById('video1');
+    const video2 = document.getElementById('video2');
+    const canvas1 = document.getElementById('canvas1');
+    const canvas2 = document.getElementById('canvas2');
+    const overlay1 = document.getElementById('overlay1');
+    const overlay2 = document.getElementById('overlay2');
+    const photo1 = document.getElementById('photo1');
+    const photo2 = document.getElementById('photo2');
+    const downloadRow = document.getElementById('downloadRow');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const presetRow = document.getElementById('presetRow');
+
+    // Flash elements & mode
+    let flashMode = 'off'; // 'off' | 'screen' | 'torch' | 'auto'
+    const flashBtn = document.getElementById('flashBtn');
+    const flashIcon = document.getElementById('flashIcon');
+    const flashText = document.getElementById('flashText');
+    const flash1 = document.getElementById('flash1');
+    const flash2 = document.getElementById('flash2');
+
+    // Retake button
+    const retakeBtn = document.getElementById('retakeBtn');
+
+    // helper untuk meng-update UI tombol flash
+    function updateFlashUI() {
+      flashText.textContent = flashMode === 'off' ? 'Off' :
+                              flashMode === 'screen' ? 'Screen' :
+                              flashMode === 'torch' ? 'Torch' :
+                              'Auto';
+      if (flashMode === 'off') flashBtn.classList.remove('selected');
+      else flashBtn.classList.add('selected');
+    }
+
+    // coba set torch pada track jika didukung
+    async function setTorchEnabled(enable) {
+      if (!currentStream) return false;
+      const track = currentStream.getVideoTracks()[0];
+      if (!track) return false;
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (!('torch' in caps)) {
+        return false;
+      }
+      try {
+        await track.applyConstraints({ advanced: [{ torch: enable }] });
+        return true;
+      } catch (e) {
+        console.warn('setTorchEnabled failed', e);
+        return false;
+      }
+    }
+
+    // naik-gilir mode flash saat tombol ditekan
+    flashBtn.onclick = function() {
+      if (flashMode === 'off') flashMode = 'screen';
+      else if (flashMode === 'screen') flashMode = 'torch';
+      else if (flashMode === 'torch') flashMode = 'auto';
+      else flashMode = 'off';
+
+      if (flashMode !== 'torch') {
+        setTorchEnabled(false).catch(()=>{});
+      }
+
+      updateFlashUI();
+    };
+
+    // camera start/stop
+    function startCamera() {
+      const constraints = {
+        video: {
+          facingMode: usingFrontCamera ? "user" : "environment",
+          width: { ideal: 720 },
+          height: { ideal: 720 }
+        }
+      };
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+      }
+      navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+          currentStream = stream;
+          video1.srcObject = stream;
+          video2.srcObject = stream;
+          video1.style.display = 'block';
+          video2.style.display = 'block';
+          canvas1.style.display = 'none';
+          canvas2.style.display = 'none';
+          photo1.style.display = 'none';
+          photo2.style.display = 'none';
+          downloadRow.style.display = 'none';
+        }).catch(err => {
+          alert("Tidak dapat mengakses kamera: " + err);
+        });
+    }
+
+    document.getElementById('switchCamBtn').onclick = function() {
+      usingFrontCamera = !usingFrontCamera;
+      setTorchEnabled(false).catch(()=>{});
+      startCamera();
+    };
+
+    // Efek utama dan preset handling (tidak berubah)
+    document.querySelectorAll('.effect-btn').forEach(btn => {
+      btn.onclick = function() {
+        document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        currentEffect = btn.getAttribute('data-effect');
+        showPresetRow();
+        applyEffectToOverlays();
+      };
+    });
+
+    function showPresetRow() {
+      presetRow.innerHTML = "";
+      if (currentEffect === "digicam") {
+        effectPresets.digicam.forEach((preset) => {
+          const b = document.createElement('button');
+          b.className = "preset-btn" + (preset === digicamPreset ? " selected" : "");
+          b.innerText = preset.name;
+          b.onclick = () => {
+            digicamPreset = preset;
+            document.querySelectorAll('.preset-btn').forEach(x => x.classList.remove('selected'));
+            b.classList.add('selected');
+            applyEffectToOverlays();
+          };
+          presetRow.appendChild(b);
+        });
+        presetRow.style.display = "flex";
+      } else if (currentEffect === "analog") {
+        effectPresets.analog.forEach((preset) => {
+          const b = document.createElement('button');
+          b.className = "preset-btn" + (preset === analogPreset ? " selected" : "");
+          b.innerText = preset.name;
+          b.onclick = () => {
+            analogPreset = preset;
+            document.querySelectorAll('.preset-btn').forEach(x => x.classList.remove('selected'));
+            b.classList.add('selected');
+            applyEffectToOverlays();
+          };
+          presetRow.appendChild(b);
+        });
+        presetRow.style.display = "flex";
+      } else {
+        presetRow.style.display = "none";
+      }
+    }
+
+    document.querySelectorAll('.frame-btn').forEach(btn => {
+      btn.onclick = function() {
+        document.querySelectorAll('.frame-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        currentFrame = btn.getAttribute('data-frame');
+        applyFrameToOverlays();
+      };
+    });
+
+    function applyFrameToOverlays() {
+      [overlay1, overlay2].forEach(ov => {
+        ov.innerHTML = '';
+        if (currentFrame === 'sinchan') {
+          if (sinchanAvailable) {
+            ov.innerHTML = `<img src="${sinchanFrameUrl}" style="width:100%;height:100%;object-fit:contain;pointer-events:none;"/>`;
+          } else {
+            // fallback: tidak menampilkan frame jika tidak tersedia
+            ov.innerHTML = '';
+            console.warn('Sinchan frame dipilih tetapi belum tersedia.');
+          }
+        }
+      });
+    }
+
+    function applyEffectToOverlays() {
+      [overlay1, overlay2].forEach(ov => {
+        ov.style.filter = '';
+        ov.style.background = 'none';
+        ov.style.mixBlendMode = 'unset';
+        if (currentEffect === "digicam") {
+          ov.style.background = `radial-gradient(circle, transparent 60%, ${digicamPreset.vignette||"rgba(30,60,90,0.30)"} 100%)`;
+          ov.style.mixBlendMode = 'multiply';
+          ov.style.filter = digicamPreset.filter;
+        } else if (currentEffect === "analog") {
+          ov.style.background = 'repeating-linear-gradient(135deg, rgba(255,244,220,0.07), rgba(255,244,220,0.13) 3px, transparent 4.5px, transparent 12px)';
+          ov.style.mixBlendMode = 'soft-light';
+          ov.style.filter = analogPreset.filter;
+        } else {
+          ov.style.background = 'none';
+          ov.style.mixBlendMode = 'unset';
+          ov.style.filter = 'none';
+        }
+      });
+      applyFrameToOverlays();
+    }
+    applyEffectToOverlays();
+    updateFlashUI();
+
+    // fungsi bantu: screen flash visual cepat
+    function doScreenFlash(duration = 120) {
+      [flash1, flash2].forEach(flashEl => {
+        flashEl.style.transition = `opacity ${Math.max(80, duration*0.6)}ms`;
+        flashEl.style.opacity = 1;
+        setTimeout(() => { flashEl.style.opacity = 0; }, duration);
+      });
+    }
+
+    // fungsi bantu: hitung kecerahan rata-rata frame (skala 0..255)
+    function measureFrameBrightness(video, sampleSize = 160) {
+      const tmpCanvas = document.createElement('canvas');
+      const w = sampleSize;
+      const h = sampleSize;
+      tmpCanvas.width = w;
+      tmpCanvas.height = h;
+      const ctx = tmpCanvas.getContext('2d');
+      try {
+        ctx.drawImage(video, 0, 0, w, h);
+      } catch (e) {
+        return Promise.resolve(255);
+      }
+      const data = ctx.getImageData(0,0,w,h).data;
+      let sum = 0, count = 0;
+      for (let i = 0; i < data.length; i += 4*8) {
+        const r = data[i], g = data[i+1], b = data[i+2];
+        const lum = 0.2126*r + 0.7152*g + 0.0722*b;
+        sum += lum; count++;
+      }
+      return Promise.resolve(sum / Math.max(1, count));
+    }
+
+    // capture flow: handle flash mode (torch / screen / auto)
+    document.getElementById('takePhotoBtn').onclick = async function() {
+      let torchWasTurnedOnForCapture = false;
+      try {
+        if (flashMode === 'torch') {
+          const ok = await setTorchEnabled(true);
+          if (!ok) {
+            doScreenFlash(120);
+          } else {
+            torchWasTurnedOnForCapture = true;
+          }
+        } else if (flashMode === 'screen') {
+          doScreenFlash(120);
+        } else if (flashMode === 'auto') {
+          const brightness = await measureFrameBrightness(video1, 120);
+          const threshold = 70;
+          if (brightness < threshold) {
+            const ok = await setTorchEnabled(true);
+            if (ok) {
+              torchWasTurnedOnForCapture = true;
+            } else {
+              doScreenFlash(120);
+            }
+          }
+        }
+
+        if (torchWasTurnedOnForCapture) {
+          await new Promise(r => setTimeout(r, 120));
+        }
+
+        const results = await Promise.all([
+          captureOneFrame(video1, canvas1, overlay1),
+          captureOneFrame(video2, canvas2, overlay2)
+        ]);
+        const [dataUrl1, dataUrl2] = results;
+        photo1.src = dataUrl1;
+        photo2.src = dataUrl2;
+        photo1.style.display = 'block';
+        photo2.style.display = 'block';
+        canvas1.style.display = 'none';
+        canvas2.style.display = 'none';
+        video1.style.display = 'none';
+        video2.style.display = 'none';
+
+        // tampilkan opsi download/retake
+        downloadRow.style.display = 'flex';
+        window.combinedDataUrl = null;
+
+      } finally {
+        if (torchWasTurnedOnForCapture) {
+          setTorchEnabled(false).catch(()=>{});
+        }
+      }
+    };
+
+    function captureOneFrame(video, canvas, overlay) {
+      return new Promise((resolve) => {
+        canvas.width = video.videoWidth || 720;
+        canvas.height = video.videoHeight || 720;
+        let ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        if (currentEffect === 'digicam') {
+          const preset = digicamPreset;
+          let grd = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.width/5, canvas.width/2, canvas.height/2, canvas.width/1.1);
+          grd.addColorStop(0, 'rgba(0,0,0,0)');
+          grd.addColorStop(1, preset.vignette||'rgba(30,60,90,0.32)');
+          ctx.fillStyle = grd;
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+          let imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+          let d = imgData.data;
+          for(let i=0;i<d.length;i+=4){
+            let r = d[i], g = d[i+1], b = d[i+2];
+            let contrast = parseFloat(preset.filter.match(/contrast\(([\d.]+)\)/)?.[1] || 1.0);
+            [r,g,b] = [r,g,b].map(v=>(contrast*(v-128)+128));
+            let avg = (r+g+b)/3;
+            r = r + 0.16*(r-avg) - 8;
+            g = g + 0.20*(g-avg) - 6;
+            b = b + 0.28*(b-avg) + (preset.blue||0);
+            let grain = (Math.random()-0.5)*(preset.grain||18);
+            d[i] = Math.min(255, Math.max(0, r+grain));
+            d[i+1] = Math.min(255, Math.max(0, g+grain));
+            d[i+2] = Math.min(255, Math.max(0, b+grain));
+          }
+          ctx.putImageData(imgData,0,0);
+        } else if (currentEffect === 'analog') {
+          const preset = analogPreset;
+          let imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+          let d = imageData.data;
+          let [toneR, toneG, toneB] = preset.tone||[22,18,10];
+          for(let i=0;i<d.length;i+=4) {
+            let r = d[i], g = d[i+1], b = d[i+2];
+            d[i] = r*0.93 + g*0.28 + b*0.13 + toneR;
+            d[i+1] = r*0.16 + g*0.82 + b*0.11 + toneG;
+            d[i+2] = r*0.18 + g*0.28 + b*0.8 + toneB;
+            let grain = (Math.random() - 0.5) * (preset.grain||18);
+            d[i] = Math.min(255, Math.max(0, d[i] + grain));
+            d[i+1] = Math.min(255, Math.max(0, d[i+1] + grain));
+            d[i+2] = Math.min(255, Math.max(0, d[i+2] + grain));
+          }
+          ctx.putImageData(imageData,0,0);
+        }
+
+        // Hanya gambar frame jika sinchanAvailable true
+        if (currentFrame === 'sinchan' && sinchanAvailable) {
+          const frameImg = new window.Image();
+          frameImg.crossOrigin = "anonymous";
+          frameImg.src = sinchanFrameUrl;
+          frameImg.onload = function() {
+            ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/png'));
+          };
+          frameImg.onerror = function() {
+            console.warn('Gagal load frame saat capture, mengabaikan frame.');
+            resolve(canvas.toDataURL('image/png'));
+          };
+        } else {
+          resolve(canvas.toDataURL('image/png'));
+        }
+      });
+    }
+
+    downloadBtn.onclick = function() {
+      combineTwoPhotos(photo1, photo2).then(combinedDataUrl => {
+        const link = document.createElement('a');
+        link.href = combinedDataUrl;
+        link.download = "yasacicam-fotobooth.png";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+    };
+
+    function combineTwoPhotos(img1, img2) {
+      return new Promise((resolve) => {
+        const w = Math.max(img1.naturalWidth, img2.naturalWidth);
+        const h = img1.naturalHeight + img2.naturalHeight;
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = "#222";
+        ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img1, 0, 0, w, img1.naturalHeight);
+        ctx.drawImage(img2, 0, img1.naturalHeight, w, img2.naturalHeight);
+        resolve(canvas.toDataURL('image/png'));
+      });
+    }
+
+    // Fungsi retake terpusat (opsi 3: tombol Ulangi)
+    function performRetake() {
+      // sembunyikan foto, tampilkan video
+      photo1.style.display = 'none';
+      photo2.style.display = 'none';
+      video1.style.display = 'block';
+      video2.style.display = 'block';
+      downloadRow.style.display = 'none';
+      // pastikan torch dimatikan
+      setTorchEnabled(false).catch(()=>{});
+      // reset combined url bila ada
+      window.combinedDataUrl = null;
+    }
+
+    // klik foto untuk kembali (masih tersedia)
+    [photo1, photo2].forEach((img) => {
+      img.onclick = function() {
+        performRetake();
+      }
+    });
+
+    // klik tombol Ulangi
+    retakeBtn.onclick = function() {
+      performRetake();
+    };
+
+    // Pastikan torch dimatikan saat meninggalkan halaman
+    window.addEventListener('beforeunload', () => {
+      setTorchEnabled(false).catch(()=>{});
+    });
+  </script>
+</body>
+</html>
